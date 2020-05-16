@@ -2,15 +2,18 @@ package com.example.shortfiletransferapp;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -19,19 +22,33 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.example.shortfiletransferapp.adapter.ListViewAdapter;
-import com.example.shortfiletransferapp.vo.ListViewNotepadVO;
+import com.example.shortfiletransferapp.utils.FileUploadUtils;
+import com.gun0912.tedpermission.PermissionListener;
+import com.gun0912.tedpermission.TedPermission;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
 
     ListView listview;
     ListViewAdapter adapter;
 
+    File tempSelectFile;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // 권한 요구
+        tedPermission();
 
         // 액션바 설정하기 //
         // 액션바 타이틀 변경하기
@@ -58,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
 
         // addItemAdapter() 메소드 내부에서 생성한 listview에 클릭 이벤트 핸들러 정의.
         // 유저 클릭시 파일 선택 창 열음
+        // 전송 관련 내용 https://derveljunit.tistory.com/302?category=523828
         listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView parent, View v, int position, long id) {
@@ -68,38 +86,85 @@ public class MainActivity extends AppCompatActivity {
                 intent.setAction(Intent.ACTION_GET_CONTENT);
                 startActivityForResult(intent, 1);
 
-//                // get item
-//                ListViewNotepadVO item = (ListViewNotepadVO) parent.getItemAtPosition(position);
-//
-//                String index = item.getIndex();
-//                String nameStr = item.getnameStr();
-//                String explainStr = item.getExplainStr();
-//
-//                // TODO : use item data.
-//                // DetailActivity로 index 값 전달
-//                Intent intent = new Intent(v.getContext(), DetailActivity.class);
-//                intent.putExtra("key", index);
-//                startActivity(intent);
             }
         });
+    }
+
+    // 첫 실행시 사용자에게 권한 요청 부분
+    private void tedPermission() {
+        PermissionListener permissionListener = new PermissionListener() {
+            @Override
+            public void onPermissionGranted() {
+                // 권한 요청 성공
+            }
+
+            @Override
+            public void onPermissionDenied(ArrayList<String> deniedPermissions) {
+                // 권한 요청 실패
+            }
+        };
+        // 쓰기, 카메라, 인터넷 권한 요구
+        TedPermission.with(this)
+                .setPermissionListener(permissionListener)
+                .setRationaleMessage(getResources().getString(R.string.permission_2))
+                .setDeniedMessage(getResources().getString(R.string.permission_1))
+                .setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.INTERNET)
+                .check();
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode != 1 || resultCode != RESULT_OK) {
             return;
-        } // 비트맵으로 받는 방법
+        }
         Uri dataUri = data.getData();
-//        try {
-        WaitingAlertDialog(); // 전송 요청 보내고 Response 기다림
-//            InputStream in = getContentResolver().openInputStream(data.getData());
-//            Bitmap image = BitmapFactory.decodeStream(in);
-//            imgVwSelected.setImageBitmap(image);
-//            in.close();
-//        } catch (IOException ioe) {
-//            ioe.printStackTrace();
-//        } // URI로 받는 방법
-//        imgVwSelected.setImageURI(data.getData());
+
+        try {
+            byte[] buffer = null;
+
+            InputStream in = getContentResolver().openInputStream(dataUri);
+
+            String[] sts = getFileName(dataUri).split("\\.");
+            String extension = sts[sts.length-1]; // 확장자
+
+//            WaitingAlertDialog(); // 전송 요청 보내고 Response 기다림
+
+            // 폴더 없을 시 생성
+            File dir = new File(getFilesDir() + "/TempFile");
+            if(!dir.exists()){
+                dir.mkdirs();
+            }
+
+            // 선택한 파일 임시 저장
+            String date = new SimpleDateFormat("yyyy_MM_dd_hh_mm_ss").format(new Date());
+            tempSelectFile = new File(getFilesDir()+"/TempFile", "temp_" + date + "." + extension);
+            final OutputStream out = new FileOutputStream(tempSelectFile);
+
+            buffer = new byte[10240];
+            int bytesRead;
+            while((bytesRead = in.read(buffer)) != -1){
+                out.write(buffer, 0, bytesRead);
+            }
+            in.close();
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    FileUploadUtils.send2Server(tempSelectFile);
+                    try {
+                        out.close();
+                    }catch (IOException ioe){
+                        ioe.printStackTrace();
+                    }
+                }
+            }).start();
+
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        } catch (NullPointerException npe){
+            npe.printStackTrace();
+        }
+
     }
 
     // 액션버튼 메뉴 액션바에 집어 넣기
@@ -114,7 +179,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        switch (id){
+        switch (id) {
             case R.id.action_refresh: // actionbar의 refresh 키 눌렀을 때 동작
                 addItemAdapter();  // 메소드 통해 adapter와 listview를 재 생성 시켜줌
                 Toast.makeText(this, "새로 고침", Toast.LENGTH_SHORT).show();
@@ -135,50 +200,12 @@ public class MainActivity extends AppCompatActivity {
         String explain = "나와의 거리 차이 10m";
         String explain2 = "나와의 거리 차이 19m";
         adapter.addItem(index, name, explain);
-        adapter.addItem(index+2, name+2, explain2);
+        adapter.addItem(index + 2, name + 2, explain2);
 
-        // NoteDB 통해서 메모의 내용 정보 받아옴
-//        for (int i = 0; i < NoteDB.getIndexes().size(); i++) {
-//            String index = NoteDB.getIndexes().get(i);
-//            boolean delete = NoteDB.getNotepad(index).isDelete();
-//            String title = NoteDB.getNotepad(index).getTitleStr();
-//            String description = NoteDB.getNotepad(index).getDescription();
-//
-//            if (delete) { // 삭제를 한 상태라면 해당 인덱스 작업 스킵
-//                continue;
-//            }
-//
-//            // 화면에서 일부분 내용 보여지게 함
-//            // 엔터키 제거
-//            // maxDescription 값보다 본문이 길면 값만큼 잘라서 보여줌
-//            if (description.length() > maxDescription) {
-//                description = description.replaceAll("\n","").substring(0, maxDescription) + "...";
-//            }
-//            else{
-//                description = description.replaceAll("\n","");
-//            }
-//
-//            // ImageDB 통해서 메모의 이미지 정보 받아옴
-//            // 미리 보기 이미지 설정해주는 부분
-//            for(int j=0; j< ImageDB.getIndexes().size(); j++) {
-//                ImageVO imageVO = ImageDB.getImage(index + j);
-//                if (imageVO != null && !imageVO.isDelete()) { // 이미지가 존재하고, 그 이미지가 delete 되지 않았을 때
-//                    ImageView imageView = setImage(imageVO.getImageUrl());
-//                    drawable = imageView.getDrawable();
-//                    break;
-//                }
-//                else{ // 이미지가 미존재하거나 해당 메모의 모든 이미지가 delete 되었을 때
-//                    drawable = ContextCompat.getDrawable(this, R.drawable.ic_action_camera);
-//                }
-//            }
-//            // adapter에 Item 추가하여 사용자 화면에 보이게함
-//            adapter.addItem(drawable, index, title, description);
-//        }
         adapter.notifyDataSetChanged(); // adapter 새로 고침
     }
 
-    public void WaitingAlertDialog()
-    {
+    public void WaitingAlertDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
         builder.setTitle("대기중").setMessage("수신자의 수락을 기다리고 있습니다.");
@@ -187,8 +214,8 @@ public class MainActivity extends AppCompatActivity {
 
         alertDialog.show();
     }
-    public void SendingAlertDialog()
-    {
+
+    public void SendingAlertDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
         builder.setTitle("파일 전송중...").setMessage("파일을 수신자에게 전송하고 있습니다. \n 남은 용량: xx, 남은 시간: xx");
@@ -198,24 +225,21 @@ public class MainActivity extends AppCompatActivity {
         alertDialog.show();
     }
 
-    public void RequestSendingAlertDialog()
-    {
+    public void RequestSendingAlertDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
         builder.setTitle("전송 요청").setMessage("선택하세요.");
 
-        builder.setPositiveButton("수락", new DialogInterface.OnClickListener(){
+        builder.setPositiveButton("수락", new DialogInterface.OnClickListener() {
             @Override
-            public void onClick(DialogInterface dialog, int id)
-            {
+            public void onClick(DialogInterface dialog, int id) {
                 Toast.makeText(getApplicationContext(), "수락하였습니다.", Toast.LENGTH_SHORT).show();
             }
         });
 
-        builder.setNegativeButton("거절", new DialogInterface.OnClickListener(){
+        builder.setNegativeButton("거절", new DialogInterface.OnClickListener() {
             @Override
-            public void onClick(DialogInterface dialog, int id)
-            {
+            public void onClick(DialogInterface dialog, int id) {
                 Toast.makeText(getApplicationContext(), "거절하였습니다.", Toast.LENGTH_SHORT).show();
             }
         });
@@ -223,7 +247,7 @@ public class MainActivity extends AppCompatActivity {
         alertDialog.show();
     }
 
-    public void PushAlarm(NotificationManager notificationManager, Intent intent, Notification.Builder builder){
+    public void PushAlarm(NotificationManager notificationManager, Intent intent, Notification.Builder builder) {
         //앞서 생성한 작업 내용을 Notification 객체에 담기 위한 PendingIntent 객체 생성
         PendingIntent pendnoti = PendingIntent.getActivity(MainActivity.this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
@@ -240,5 +264,29 @@ public class MainActivity extends AppCompatActivity {
         //NotificationManager를 이용하여 푸시 알림 보내기
         notificationManager.notify(1, builder.build());
     }
+
+    // Uri 통해서 파일 이름 얻는 메소드
+    public String getFileName(Uri uri) {
+        String result = null;
+        if (uri.getScheme().equals("content")) {
+            Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+            try {
+                if (cursor != null && cursor.moveToFirst()) {
+                    result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                }
+            } finally {
+                cursor.close();
+            }
+        }
+        if (result == null) {
+            result = uri.getPath();
+            int cut = result.lastIndexOf('/');
+            if (cut != -1) {
+                result = result.substring(cut + 1);
+            }
+        }
+        return result;
+    }
+
 }
 
