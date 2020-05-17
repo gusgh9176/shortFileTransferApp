@@ -2,18 +2,15 @@ package com.example.shortfiletransferapp;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.Manifest;
 import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.database.Cursor;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.OpenableColumns;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -22,9 +19,9 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.example.shortfiletransferapp.adapter.ListViewAdapter;
+import com.example.shortfiletransferapp.permission.TedPermission;
 import com.example.shortfiletransferapp.utils.FileUploadUtils;
-import com.gun0912.tedpermission.PermissionListener;
-import com.gun0912.tedpermission.TedPermission;
+import com.example.shortfiletransferapp.utils.GetFileNameUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -32,7 +29,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
@@ -48,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // 권한 요구
-        tedPermission();
+        TedPermission.getPermission(getApplicationContext(), getResources());
 
         // 액션바 설정하기 //
         // 액션바 타이틀 변경하기
@@ -90,28 +86,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // 첫 실행시 사용자에게 권한 요청 부분
-    private void tedPermission() {
-        PermissionListener permissionListener = new PermissionListener() {
-            @Override
-            public void onPermissionGranted() {
-                // 권한 요청 성공
-            }
-
-            @Override
-            public void onPermissionDenied(ArrayList<String> deniedPermissions) {
-                // 권한 요청 실패
-            }
-        };
-        // 쓰기, 카메라, 인터넷 권한 요구
-        TedPermission.with(this)
-                .setPermissionListener(permissionListener)
-                .setRationaleMessage(getResources().getString(R.string.permission_2))
-                .setDeniedMessage(getResources().getString(R.string.permission_1))
-                .setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.INTERNET)
-                .check();
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode != 1 || resultCode != RESULT_OK) {
@@ -120,16 +94,18 @@ public class MainActivity extends AppCompatActivity {
         Uri dataUri = data.getData();
 
         try {
-            byte[] buffer = null;
+            int bytesRead;
+            byte[] buffer = new byte[10240];
 
             InputStream in = getContentResolver().openInputStream(dataUri);
-
-            String[] sts = getFileName(dataUri).split("\\.");
+            // 확장자 찾기
+            String[] sts = GetFileNameUtils.getFileName(dataUri, getContentResolver()).split("\\.");
             String extension = sts[sts.length-1]; // 확장자
+            // 확장자 찾기 끝
 
 //            WaitingAlertDialog(); // 전송 요청 보내고 Response 기다림
 
-            // 폴더 없을 시 생성
+            // 폴더 없을 시 폴더 생성
             File dir = new File(getFilesDir() + "/TempFile");
             if(!dir.exists()){
                 dir.mkdirs();
@@ -140,8 +116,7 @@ public class MainActivity extends AppCompatActivity {
             tempSelectFile = new File(getFilesDir()+"/TempFile", "temp_" + date + "." + extension);
             final OutputStream out = new FileOutputStream(tempSelectFile);
 
-            buffer = new byte[10240];
-            int bytesRead;
+            // 데이터 쓰기
             while((bytesRead = in.read(buffer)) != -1){
                 out.write(buffer, 0, bytesRead);
             }
@@ -158,13 +133,11 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }).start();
-
         } catch (IOException ioe) {
             ioe.printStackTrace();
         } catch (NullPointerException npe){
             npe.printStackTrace();
         }
-
     }
 
     // 액션버튼 메뉴 액션바에 집어 넣기
@@ -264,29 +237,5 @@ public class MainActivity extends AppCompatActivity {
         //NotificationManager를 이용하여 푸시 알림 보내기
         notificationManager.notify(1, builder.build());
     }
-
-    // Uri 통해서 파일 이름 얻는 메소드
-    public String getFileName(Uri uri) {
-        String result = null;
-        if (uri.getScheme().equals("content")) {
-            Cursor cursor = getContentResolver().query(uri, null, null, null, null);
-            try {
-                if (cursor != null && cursor.moveToFirst()) {
-                    result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
-                }
-            } finally {
-                cursor.close();
-            }
-        }
-        if (result == null) {
-            result = uri.getPath();
-            int cut = result.lastIndexOf('/');
-            if (cut != -1) {
-                result = result.substring(cut + 1);
-            }
-        }
-        return result;
-    }
-
 }
 
