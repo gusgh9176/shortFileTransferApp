@@ -28,6 +28,7 @@ public class MyFireBaseMessagingService extends FirebaseMessagingService {
         super.onNewToken(token);
         Log.d("FCM Log", "Refreshed token: " + token);
 
+        // https://yamea-guide.tistory.com/227
         // 생성한 토큰을 서버로 날려서 저장하기 위해서 만든거
 //        sendRegistrationToServer(token);
     }
@@ -70,7 +71,7 @@ public class MyFireBaseMessagingService extends FirebaseMessagingService {
 
         //request
         Request request = new Request.Builder()
-                .url("http://172.30.1.60:8081/mobile/sendFCM") // 토큰 저장하려고 보내는 URL
+                .url("http://172.30.1.60:8081/mobile/sendFCM") // 토큰 저장하려고 보내는 URL / 추후 따로 토큰 저장하는 url 만들어야함 현재는 그냥 전체 푸시 알람 보내주는 URL 넣어뒀음
                 .post(body)
                 .build();
 

@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -22,6 +23,7 @@ import android.widget.Toast;
 
 import com.example.shortfiletransferapp.adapter.ListViewAdapter;
 import com.example.shortfiletransferapp.permission.TedPermission;
+import com.example.shortfiletransferapp.utils.FileDownloadUtils;
 import com.example.shortfiletransferapp.utils.FileUploadUtils;
 import com.example.shortfiletransferapp.utils.GetFileNameUtils;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -119,54 +121,49 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode != 1 || resultCode != RESULT_OK) {
             return;
         }
-        Uri dataUri = data.getData();
+        final Uri dataUri = data.getData();
 
-        try {
-            int bytesRead;
-            byte[] buffer = new byte[10240];
 
-            InputStream in = getContentResolver().openInputStream(dataUri);
-            // 확장자 찾기
-            String[] sts = GetFileNameUtils.getFileName(dataUri, getContentResolver()).split("\\.");
-            String extension = sts[sts.length-1]; // 확장자
-            // 확장자 찾기 끝
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    int bytesRead;
+                    byte[] buffer = new byte[10240];
+
+                    InputStream in = getContentResolver().openInputStream(dataUri);
+                    // 확장자 찾기
+                    String[] sts = GetFileNameUtils.getFileName(dataUri, getContentResolver()).split("\\.");
+                    String extension = sts[sts.length - 1]; // 확장자
+                    // 확장자 찾기 끝
 
 //            WaitingAlertDialog(); // 전송 요청 보내고 Response 기다림
 
-            // 폴더 없을 시 폴더 생성
-            File dir = new File(getFilesDir() + "/TempFile");
-            if(!dir.exists()){
-                dir.mkdirs();
-            }
-
-            // 선택한 파일 임시 저장
-            String date = new SimpleDateFormat("yyyy_MM_dd_hh_mm_ss").format(new Date());
-            tempSelectFile = new File(getFilesDir()+"/TempFile", "temp_" + date + "." + extension);
-            final OutputStream out = new FileOutputStream(tempSelectFile);
-
-            // 데이터 쓰기
-            while((bytesRead = in.read(buffer)) != -1){
-                out.write(buffer, 0, bytesRead);
-            }
-            in.close();
-
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    FileUploadUtils.send2Server(tempSelectFile);
-                    try {
-                        out.close();
-                    }catch (IOException ioe){
-                        ioe.printStackTrace();
+                    // 폴더 없을 시 폴더 생성
+                    File dir = new File(getFilesDir() + "/TempFile");
+                    if (!dir.exists()) {
+                        dir.mkdirs();
                     }
+
+                    // 선택한 파일 임시 저장
+                    String date = new SimpleDateFormat("yyyy_MM_dd_hh_mm_ss").format(new Date());
+                    tempSelectFile = new File(getFilesDir() + "/TempFile", "temp_" + date + "." + extension);
+                    OutputStream out = new FileOutputStream(tempSelectFile);
+
+                    // 데이터 쓰기
+                    while ((bytesRead = in.read(buffer)) != -1) {
+                        out.write(buffer, 0, bytesRead);
+                    }
+                    FileUploadUtils.send2Server(tempSelectFile); // 업로드 테스트
+                    in.close();
+                    out.close();
+                } catch (IOException ioe) {
+                    ioe.printStackTrace();
                 }
-            }).start();
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-        } catch (NullPointerException npe){
-            npe.printStackTrace();
-        }
+            }
+        }).start();
     }
+
 
     // 액션버튼 메뉴 액션바에 집어 넣기
     @Override
@@ -182,8 +179,21 @@ public class MainActivity extends AppCompatActivity {
 
         switch (id) {
             case R.id.action_refresh: // actionbar의 refresh 키 눌렀을 때 동작
-                addItemAdapter();  // 메소드 통해 adapter와 listview를 재 생성 시켜줌
-                Toast.makeText(this, "새로 고침", Toast.LENGTH_SHORT).show();
+//                addItemAdapter();  // 메소드 통해 adapter와 listview를 재 생성 시켜줌
+
+                Toast.makeText(this, "실행", Toast.LENGTH_SHORT).show();
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+//                        String fileURL = FileDownloadUtils.send2Server("testToken"); // 웹서버에 파일이 있는 경로
+                        // 선택한 파일 임시 저장
+                        String date = new SimpleDateFormat("yyyy_MM_dd_hh_mm_ss").format(new Date());
+                        String savePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + "/" + date + ".";
+                        FileDownloadUtils.send2Server("testToken", savePath);
+                    }
+                }).start();
+
+//                Toast.makeText(this, "새로 고침", Toast.LENGTH_SHORT).show();
                 break;
         }
         return super.onOptionsItemSelected(item);

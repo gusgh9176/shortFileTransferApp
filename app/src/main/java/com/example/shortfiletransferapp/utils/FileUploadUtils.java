@@ -15,9 +15,13 @@ import okhttp3.Response;
 
 public class FileUploadUtils {
     public static void send2Server(File file) {
-        RequestBody requestBody = new MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("files", file.getName(), RequestBody.create(MultipartBody.FORM, file)).build();
-        Request request = new Request.Builder().url("http://172.30.1.60:8081/upload") // Server URL 은 본인 IP를 입력
+        RequestBody requestBody = new MultipartBody.Builder().setType(MultipartBody.FORM)
+                .addFormDataPart("files", file.getName(), RequestBody.create(MultipartBody.FORM, file))
+                .build();
+        Request request = new Request.Builder()
+                .url("http://172.30.1.60:8081/upload") // Server URL 은 본인 IP를 입력
                 .post(requestBody).build();
+
         OkHttpClient client = new OkHttpClient();
         client.newCall(request).enqueue(new Callback() {
             @Override
