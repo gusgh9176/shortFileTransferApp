@@ -103,17 +103,13 @@ public class MainActivity extends AppCompatActivity {
                             Log.w("FCM Log", "getInstanceId failed", task.getException());
                             return;
                         }
-                        String token = task.getResult().getToken();
-                        Log.d("FCM Log", "FCM 토큰: " + token);
-                        Toast.makeText(MainActivity.this, token, Toast.LENGTH_SHORT).show();
+                        String token = task.getResult().getToken(); // 해당 앱의 FCM token
+                        Log.d("FCM Log", "FCM Token: " + token);
                     }
                 });
         //이렇게 ALL 추가 하면 이 디바이스는 ALL을 구독한다는 얘기가 된다.
         FirebaseMessaging.getInstance().subscribeToTopic("ALL");
-
         // FireBase 테스트 끝
-
-
     }
 
     @Override
@@ -185,11 +181,11 @@ public class MainActivity extends AppCompatActivity {
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-//                        String fileURL = FileDownloadUtils.send2Server("testToken"); // 웹서버에 파일이 있는 경로
+                        // http://egloos.zum.com/pavecho/v/7204359
                         // 선택한 파일 임시 저장
                         String date = new SimpleDateFormat("yyyy_MM_dd_hh_mm_ss").format(new Date());
                         String savePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + "/" + date + ".";
-                        FileDownloadUtils.send2Server("testToken", savePath);
+                        FileDownloadUtils.send2Server("testToken", savePath); // 다운로드 테스트
                     }
                 }).start();
 

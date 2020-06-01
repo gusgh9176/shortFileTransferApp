@@ -34,7 +34,8 @@ public class FileDownloadUtils {
             RequestBody requestBody = RequestBody.create(JSON, jsonObject.toString());
 
             Request request = new Request.Builder()
-                    .url("http://172.30.1.60:8081/download") // Server URL 은 본인 IP를 입력
+                    .url("https://junior-programmer.com/download") // Server URL 은 본인 IP를 입력
+//                    .url("http://172.30.1.60:8080/download")
                     .post(requestBody)
                     .build();
 
