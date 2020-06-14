@@ -32,6 +32,7 @@ public class FileUploadUtils {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 Log.d("TEST : ", response.body().string());
+                response.close();
             }
         });
     }

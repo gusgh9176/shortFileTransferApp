@@ -25,7 +25,7 @@ public class FileDownloadUtils {
         // create your json here
         JSONObject jsonObject = new JSONObject();
         try {
-            jsonObject.put("Token", token);
+            jsonObject.put("token", token);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -53,6 +53,7 @@ public class FileDownloadUtils {
             while((bytesRead =inputStream.read(buffer)) != -1) {
                 outputStream.write(buffer, 0, bytesRead);
             }
+            response.close();
             inputStream.close();
             outputStream.close();
             //
