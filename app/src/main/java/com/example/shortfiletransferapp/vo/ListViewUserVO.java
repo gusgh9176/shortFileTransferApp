@@ -1,20 +1,9 @@
 package com.example.shortfiletransferapp.vo;
 
-import android.graphics.drawable.Drawable;
-
-public class ListViewNotepadVO {
-//    private Drawable iconDrawable ; // 미리보기 아이콘
-    private String index; // 메모의 인덱스
-    private String nameStr ; // 이름
+public class ListViewUserVO {
+    private String index; // user의 인덱스
+    private String nameStr ; // name
     private String explainStr ; // 설명
-
-//    public Drawable getIconDrawable() {
-//        return iconDrawable;
-//    }
-
-//    public void setIconDrawable(Drawable iconDrawable) {
-//        this.iconDrawable = iconDrawable;
-//    }
 
     public String getIndex() {
         return index;

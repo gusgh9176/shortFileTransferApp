@@ -1,23 +1,21 @@
 package com.example.shortfiletransferapp.adapter;
 
 import android.content.Context;
-import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.shortfiletransferapp.R;
-import com.example.shortfiletransferapp.vo.ListViewNotepadVO;
+import com.example.shortfiletransferapp.vo.ListViewUserVO;
 
 import java.util.ArrayList;
 
 public class ListViewAdapter extends BaseAdapter {
 
     // Adapter에 추가된 데이터를 저장하기 위한 ArrayList
-    private ArrayList<ListViewNotepadVO> listViewItemList = new ArrayList<ListViewNotepadVO>() ;
+    private ArrayList<ListViewUserVO> listViewItemList = new ArrayList<ListViewUserVO>() ;
 
     // ListViewAdapter의 생성자
     public ListViewAdapter() { }
@@ -77,7 +75,7 @@ public class ListViewAdapter extends BaseAdapter {
 
     // 아이템 데이터 추가를 위한 메소드. 개발자가 원하는대로 작성 가능.
     public void addItem(String index, String name, String explain) {
-        ListViewNotepadVO item = new ListViewNotepadVO();
+        ListViewUserVO item = new ListViewUserVO();
 
         item.setIndex(index);
 //        item.setIconDrawable(icon);
