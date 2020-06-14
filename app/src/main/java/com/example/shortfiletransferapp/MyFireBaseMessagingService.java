@@ -5,6 +5,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
@@ -20,6 +21,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.Random;
 
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -92,11 +94,20 @@ public class MyFireBaseMessagingService extends FirebaseMessagingService {
 
     // 서버로 토큰 값 전송 (서버에서 해당 기기 토큰 값 저장하는 용도)
     private void sendRegistrationToServer(String token) {
+        Random random = new Random();
+        String name = Integer.toString(random.nextInt(10000000)); // 이름
+
+        //만들어진 token 저장
+        SharedPreferences pref = getSharedPreferences("pref", MODE_PRIVATE);
+        SharedPreferences.Editor editor = pref.edit();
+        editor.putString("token", token);
+        editor.apply();
+        // 저장 끝
 
         MediaType JSON = MediaType.parse("application/json; charset=utf-8");
         JSONObject jsonInput = new JSONObject();
         try {
-            jsonInput.put("name", "name"); // User name (변동 가능)
+            jsonInput.put("name", name); // User name (변동 가능)
             jsonInput.put("token", token); // User token (설치시 고정)
         } catch (JSONException e) {
             e.printStackTrace();
@@ -108,8 +119,8 @@ public class MyFireBaseMessagingService extends FirebaseMessagingService {
 
         //request
         Request request = new Request.Builder()
-//                .url("http://172.30.1.60:8080/mobile/insert/FCMToken") // 토큰 저장하려고 보내는 URL
-                .url("https://junior-programmer.com/mobile/insert/FCMToken")
+                .url("http://172.30.1.60:8080/mobile/insert/FCMToken") // 토큰 저장하려고 보내는 URL
+//                .url("https://junior-programmer.com/mobile/insert/FCMToken")
                 .post(body)
                 .build();
 
