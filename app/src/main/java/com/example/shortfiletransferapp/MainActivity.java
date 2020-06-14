@@ -9,6 +9,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Bundle;
@@ -26,6 +27,8 @@ import com.example.shortfiletransferapp.permission.TedPermission;
 import com.example.shortfiletransferapp.utils.FileDownloadUtils;
 import com.example.shortfiletransferapp.utils.FileUploadUtils;
 import com.example.shortfiletransferapp.utils.GetFileNameUtils;
+import com.example.shortfiletransferapp.utils.GetUserListUtils;
+import com.example.shortfiletransferapp.vo.UserVO;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.iid.FirebaseInstanceId;
@@ -51,6 +54,24 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Log.d("Start: onCreate ", "Start: onCreate ");
+
+        // FireBase 테스트
+        FirebaseInstanceId.getInstance().getInstanceId()
+                .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<InstanceIdResult> task) {
+                        if (!task.isSuccessful()) {
+                            Log.w("FCM Log", "getInstanceId failed", task.getException());
+                            return;
+                        }
+                        String token = task.getResult().getToken(); // 해당 앱의 FCM token
+                        Log.d("FCM Log", "FCM Token: " + token);
+                    }
+                });
+        //이렇게 ALL 추가 하면 이 디바이스는 ALL을 구독한다는 얘기가 된다.
+        FirebaseMessaging.getInstance().subscribeToTopic("ALL");
+        // FireBase 테스트 끝
 
         // 권한 요구
         TedPermission.getPermission(getApplicationContext(), getResources());
@@ -76,40 +97,51 @@ public class MainActivity extends AppCompatActivity {
 
 //        PushAlarm(notificationManager, intent, builder); // 푸쉬 알람 보냄
 
-        addItemAdapter(); // 유저 목록 갱신
 
-        // addItemAdapter() 메소드 내부에서 생성한 listview에 클릭 이벤트 핸들러 정의.
-        // 유저 클릭시 파일 선택 창 열음
-        // 전송 관련 내용 https://derveljunit.tistory.com/302?category=523828
-        listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+        Log.d("End: onCreate ", "End: onCreate ");
+    }
+
+    @Override
+    protected void onStart(){
+        super.onStart();
+        Log.d("Start: onStart ", "Start: onStart ");
+
+        // FCM 실행시 저장해둔 token 값 가져옴
+        // 서버에 요청하여 유저 목록 갱신
+        // 갱신된 유저 목록에서 선택 시 실행 코드
+        new Thread(new Runnable() {
             @Override
-            public void onItemClick(AdapterView parent, View v, int position, long id) {
+            public void run() {
+                // 저장해놨던 token 값 가져오기
+                SharedPreferences pref = getSharedPreferences("pref", MODE_PRIVATE);
+                String token = pref.getString("token","");
+                // 얻은 토큰으로 유저 목록 받아오기
+                final UserVO[] userVOS = GetUserListUtils.send2Server(token);
 
-                Intent intent = new Intent();
-                intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-                intent.setType("*/*");
-                intent.setAction(Intent.ACTION_GET_CONTENT);
-                startActivityForResult(intent, 1);
-
-            }
-        });
-
-        // FireBase 테스트
-        FirebaseInstanceId.getInstance().getInstanceId()
-                .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+                runOnUiThread(new Runnable() {
                     @Override
-                    public void onComplete(@NonNull Task<InstanceIdResult> task) {
-                        if (!task.isSuccessful()) {
-                            Log.w("FCM Log", "getInstanceId failed", task.getException());
-                            return;
-                        }
-                        String token = task.getResult().getToken(); // 해당 앱의 FCM token
-                        Log.d("FCM Log", "FCM Token: " + token);
+                    public void run() {
+                        addItemAdapter(userVOS); // 유저 목록 갱신
+                        // addItemAdapter() 메소드 내부에서 생성한 listview에 클릭 이벤트 핸들러 정의.
+                        // 유저 클릭시 파일 선택 창 열음
+                        // 전송 관련 내용 https://derveljunit.tistory.com/302?category=523828
+                        listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                            @Override
+                            public void onItemClick(AdapterView parent, View v, int position, long id) {
+                                Intent intent = new Intent();
+                                intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                                intent.setType("*/*");
+                                intent.setAction(Intent.ACTION_GET_CONTENT);
+                                startActivityForResult(intent, 1);
+                            }
+                        });
                     }
                 });
-        //이렇게 ALL 추가 하면 이 디바이스는 ALL을 구독한다는 얘기가 된다.
-        FirebaseMessaging.getInstance().subscribeToTopic("ALL");
-        // FireBase 테스트 끝
+            }
+        }).start();
+
+        Log.d("End: onStart ", "End: onStart ");
     }
 
     @Override
@@ -118,7 +150,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         final Uri dataUri = data.getData();
-
 
         new Thread(new Runnable() {
             @Override
@@ -150,7 +181,8 @@ public class MainActivity extends AppCompatActivity {
                     while ((bytesRead = in.read(buffer)) != -1) {
                         out.write(buffer, 0, bytesRead);
                     }
-                    FileUploadUtils.send2Server(tempSelectFile); // 업로드 테스트
+                    // 업로드 테스트
+                    FileUploadUtils.send2Server(tempSelectFile);
                     in.close();
                     out.close();
                 } catch (IOException ioe) {
@@ -195,19 +227,19 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private void addItemAdapter() {
+    private void addItemAdapter(UserVO[] userVOS) {
         // Adapter 생성
         adapter = new ListViewAdapter();
         // 리스트뷰 참조 및 Adapter달기
         listview = (ListView) findViewById(R.id.listView_user);
         listview.setAdapter(adapter);
 
-        String index = "1";
-        String name = "Moon";
-        String explain = "나와의 거리 차이 10m";
-        String explain2 = "나와의 거리 차이 19m";
-        adapter.addItem(index, name, explain);
-        adapter.addItem(index + 2, name + 2, explain2);
+        for(UserVO vo : userVOS){
+            String index = "1";
+            String name = vo.getName();
+            String explain = "나와의 거리 차이 10m";
+            adapter.addItem(index, name, explain);
+        }
 
         adapter.notifyDataSetChanged(); // adapter 새로 고침
     }
