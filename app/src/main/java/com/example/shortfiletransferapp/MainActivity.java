@@ -24,10 +24,12 @@ import android.widget.Toast;
 
 import com.example.shortfiletransferapp.adapter.ListViewAdapter;
 import com.example.shortfiletransferapp.permission.TedPermission;
-import com.example.shortfiletransferapp.utils.FileDownloadUtils;
-import com.example.shortfiletransferapp.utils.FileUploadUtils;
+import com.example.shortfiletransferapp.utils.network.FileDownloadUtils;
+import com.example.shortfiletransferapp.utils.network.FileUploadUtils;
 import com.example.shortfiletransferapp.utils.GetFileNameUtils;
-import com.example.shortfiletransferapp.utils.GetUserListUtils;
+import com.example.shortfiletransferapp.utils.network.GetUserListUtils;
+import com.example.shortfiletransferapp.utils.network.SendingMytokenAndOpponentName;
+import com.example.shortfiletransferapp.vo.ListViewUserVO;
 import com.example.shortfiletransferapp.vo.UserVO;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -49,6 +51,9 @@ public class MainActivity extends AppCompatActivity {
     ListViewAdapter adapter;
 
     File tempSelectFile;
+
+    private String token; // my token onStart에서 값 불러와서 넣어짐
+    private String opponentName; // 전송 상대 이름, 유저목록에서 클릭 시 값 저장 됨
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,13 +120,17 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 // 저장해놨던 token 값 가져오기
                 SharedPreferences pref = getSharedPreferences("pref", MODE_PRIVATE);
-                String token = pref.getString("token","");
+                token = pref.getString("token","");
                 // 얻은 토큰으로 유저 목록 받아오기
                 final UserVO[] userVOS = GetUserListUtils.send2Server(token);
 
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+                        if(userVOS == null){
+                            Log.d("state: userVOS", "is null");
+                            return;
+                        }
                         addItemAdapter(userVOS); // 유저 목록 갱신
                         // addItemAdapter() 메소드 내부에서 생성한 listview에 클릭 이벤트 핸들러 정의.
                         // 유저 클릭시 파일 선택 창 열음
@@ -129,6 +138,8 @@ public class MainActivity extends AppCompatActivity {
                         listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                             @Override
                             public void onItemClick(AdapterView parent, View v, int position, long id) {
+                                opponentName = ((ListViewUserVO)adapter.getItem(position)).getnameStr(); // 상대 이름 변수에 저장 됨
+//                                Log.d("opponentName: ", opponentName);
                                 Intent intent = new Intent();
                                 intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
                                 intent.setType("*/*");
@@ -151,6 +162,12 @@ public class MainActivity extends AppCompatActivity {
         }
         final Uri dataUri = data.getData();
 
+        // 전송 완료 될때까지 떠있을 alertDialog 생성
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("대기중").setMessage("파일 업로드를 기다리고 있습니다.");
+        builder.setCancelable(false);
+        final AlertDialog alertDialog = builder.create();
+
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -163,8 +180,6 @@ public class MainActivity extends AppCompatActivity {
                     String[] sts = GetFileNameUtils.getFileName(dataUri, getContentResolver()).split("\\.");
                     String extension = sts[sts.length - 1]; // 확장자
                     // 확장자 찾기 끝
-
-//            WaitingAlertDialog(); // 전송 요청 보내고 Response 기다림
 
                     // 폴더 없을 시 폴더 생성
                     File dir = new File(getFilesDir() + "/TempFile");
@@ -188,8 +203,20 @@ public class MainActivity extends AppCompatActivity {
                 } catch (IOException ioe) {
                     ioe.printStackTrace();
                 }
+                // 전송 작업 다 완료되면 해당 팝업창 닫힘
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        alertDialog.dismiss();
+                        completeAlertDialog();
+                    }
+                });
             }
         }).start();
+
+        // 전송 완료 될때까지 해당 alertDialog 화면에 떠있음
+        alertDialog.show();
+
     }
 
 
@@ -244,10 +271,25 @@ public class MainActivity extends AppCompatActivity {
         adapter.notifyDataSetChanged(); // adapter 새로 고침
     }
 
-    public void WaitingAlertDialog() {
+    // 기다리는 작업 완료시 띄워줄 alertDialog
+    public void completeAlertDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
-        builder.setTitle("대기중").setMessage("수신자의 수락을 기다리고 있습니다.");
+        builder.setTitle("끝났습니다").setMessage("파일 업로드가 완료되었습니다. \n확인 버튼을 눌러 상대에게 요청을 보냅니다.");
+        builder.setCancelable(false);
+        builder.setPositiveButton("확인", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int which) {
+                // 서버로 요청 보내는 부분 코드 작성하기
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        SendingMytokenAndOpponentName.send2Server(token, opponentName); // 내 token과 상대 이름으로 전송 요청 서버로 보내기
+                    }
+                }).start();
+
+            }
+        });
 
         AlertDialog alertDialog = builder.create();
 
