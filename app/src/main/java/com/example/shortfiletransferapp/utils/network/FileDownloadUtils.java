@@ -1,4 +1,4 @@
-package com.example.shortfiletransferapp.utils;
+package com.example.shortfiletransferapp.utils.network;
 
 
 import org.json.JSONException;

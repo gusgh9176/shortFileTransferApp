@@ -1,4 +1,4 @@
-package com.example.shortfiletransferapp.utils;
+package com.example.shortfiletransferapp.utils.network;
 
 import com.example.shortfiletransferapp.vo.UserVO;
 import com.fasterxml.jackson.core.JsonGenerationException;
@@ -11,9 +11,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 
-import okhttp3.Call;
-import okhttp3.Callback;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -63,6 +62,8 @@ public class GetUserListUtils {
 
                 return userVOS; // user name 리스트 반환
 
+            } catch (SocketTimeoutException ste) {
+                ste.printStackTrace();
             } catch (JsonGenerationException jge) {
                 jge.printStackTrace();
             } catch (JsonMappingException jme) {
@@ -70,7 +71,6 @@ public class GetUserListUtils {
             } catch (IOException ioe) {
                 ioe.printStackTrace();
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }

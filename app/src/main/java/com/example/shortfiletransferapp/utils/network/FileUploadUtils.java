@@ -1,4 +1,4 @@
-package com.example.shortfiletransferapp.utils;
+package com.example.shortfiletransferapp.utils.network;
 
 import android.util.Log;
 
@@ -19,7 +19,8 @@ public class FileUploadUtils {
                 .addFormDataPart("files", file.getName(), RequestBody.create(MultipartBody.FORM, file))
                 .build();
         Request request = new Request.Builder()
-                .url("https://junior-programmer.com/upload") // Server URL 은 본인 IP를 입력
+//                .url("https://junior-programmer.com/upload") // Server URL 은 본인 IP를 입력
+                .url("http://172.30.1.60:8080/upload")
                 .post(requestBody).build();
 
         OkHttpClient client = new OkHttpClient();
