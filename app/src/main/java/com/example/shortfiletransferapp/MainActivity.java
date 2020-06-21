@@ -103,6 +103,11 @@ public class MainActivity extends AppCompatActivity {
 //        PushAlarm(notificationManager, intent, builder); // 푸쉬 알람 보냄
 
         Log.d("End: onCreate ", "End: onCreate ");
+        try {
+            Thread.sleep(3000); // 3초 정지 FCM 전송을 완료하고 목록 갱신 요청하기 위해 사용
+        }catch (InterruptedException ie){
+            ie.printStackTrace();
+        }
     }
 
     @Override
