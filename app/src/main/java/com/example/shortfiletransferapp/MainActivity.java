@@ -102,8 +102,6 @@ public class MainActivity extends AppCompatActivity {
 
 //        PushAlarm(notificationManager, intent, builder); // 푸쉬 알람 보냄
 
-
-
         Log.d("End: onCreate ", "End: onCreate ");
     }
 
