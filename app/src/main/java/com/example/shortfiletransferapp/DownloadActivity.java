@@ -9,6 +9,8 @@ import android.content.SharedPreferences;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.Environment;
+import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.example.shortfiletransferapp.utils.network.FileDownloadUtils;
@@ -57,7 +59,9 @@ public class DownloadActivity extends AppCompatActivity {
         builder.setPositiveButton("수락", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int id) {
-                Toast.makeText(getApplicationContext(), "수락하였습니다. 다운로드가 실행됩니다.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "다운로드가 실행됩니다. 완료 후 메인 페이지로 돌아갑니다.", Toast.LENGTH_SHORT).show();
+                ProgressBar progressBar = findViewById(R.id.progress1);
+                progressBar.setVisibility(View.VISIBLE);
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
@@ -76,7 +80,7 @@ public class DownloadActivity extends AppCompatActivity {
         builder.setNegativeButton("거절", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int id) {
-                Toast.makeText(getApplicationContext(), "거절하였습니다. 잠시 후 메인페이지로 돌아갑니다.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "거절하였습니다. 잠시 후 메인 페이지로 돌아갑니다.", Toast.LENGTH_SHORT).show();
                 moveMainActivity();
             }
         });
