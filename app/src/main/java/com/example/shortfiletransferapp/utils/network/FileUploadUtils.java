@@ -16,6 +16,7 @@ import okhttp3.Response;
 public class FileUploadUtils {
     public static void send2Server(File file, String token) {
         int tokenLength = token.length();
+        int responseCode = -1;
         String somePartToken = token.substring(tokenLength-10, tokenLength); // token 의 뒤에서 10번째 자리 전달해줌
 
         RequestBody requestBody = new MultipartBody.Builder().setType(MultipartBody.FORM)
@@ -28,18 +29,15 @@ public class FileUploadUtils {
                 .post(requestBody).build();
 
         OkHttpClient client = new OkHttpClient();
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                e.printStackTrace();
-            }
 
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                Log.d("TEST : ", response.body().string());
-                response.close();
-            }
-        });
+        try {
+            Response response = client.newCall(request).execute();
+            responseCode = response.code();
+        }catch (IOException ioe){
+            ioe.printStackTrace();
+        }
+        Log.d("Upload ResponseCode: ", Integer.toString(responseCode));
+        
     }
 }
 
