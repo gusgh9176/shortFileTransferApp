@@ -20,11 +20,12 @@ import okhttp3.Response;
 // httpURLConnection
 public class FileDownloadUtils {
     // token 전달하여 파일 경로 얻음
-    public static void send2Server(String token, String dir) {
+    public static void send2Server(String senderName, String token, String dir) {
         MediaType JSON = MediaType.parse("application/json; charset=utf-8");
         // create your json here
         JSONObject jsonObject = new JSONObject();
         try {
+            jsonObject.put("name", senderName);
             jsonObject.put("token", token);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -34,8 +35,8 @@ public class FileDownloadUtils {
             RequestBody requestBody = RequestBody.create(JSON, jsonObject.toString());
 
             Request request = new Request.Builder()
-                    .url("https://junior-programmer.com/download") // Server URL 은 본인 IP를 입력
-//                    .url("http://172.30.1.60:8080/download")
+//                    .url("https://junior-programmer.com/download") // Server URL 은 본인 IP를 입력
+                    .url("http://172.30.1.60:8080/download")
                     .post(requestBody)
                     .build();
 
