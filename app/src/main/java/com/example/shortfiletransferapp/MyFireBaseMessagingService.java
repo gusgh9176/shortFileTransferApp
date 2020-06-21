@@ -48,21 +48,27 @@ public class MyFireBaseMessagingService extends FirebaseMessagingService {
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         // 알람 Title, 알람 Body
         try {
-            sendNotification(remoteMessage.getNotification().getTitle(), remoteMessage.getNotification().getBody());
+            sendNotification(remoteMessage.getData().get("title"), remoteMessage.getData().get("body"), remoteMessage.getData().get("clickAction"), remoteMessage.getData().get("senderName"));
         }catch (NullPointerException e){
             e.printStackTrace();
         }
     }
 
     // 메시지를 받았을 때 처리하는 함수 (알람 보여줌)
-    private void sendNotification(String messageTitle, String messageBody) {
+    private void sendNotification(String messageTitle, String messageBody, String click_action, String senderName) {
 
         if (messageTitle != null && messageBody != null) {
             Log.d("FCM Log", "알림 메시지: " + messageBody);
 
-            Intent intent = new Intent(this, MainActivity.class);
+//            Intent intent = new Intent(this, MainActivity.class);
+//            Intent intent = new Intent(this, DownloadActivity.class);
+            Intent intent = new Intent(this, DownloadActivity.class);
 
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            if(click_action.equals("DownloadActivity")){
+                intent = new Intent(this, DownloadActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            }
+
             PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT);
 
             String channelId = "Channel ID";
