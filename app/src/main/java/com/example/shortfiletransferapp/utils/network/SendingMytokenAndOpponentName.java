@@ -22,6 +22,7 @@ import okhttp3.Response;
 public class SendingMytokenAndOpponentName {
 
     public static boolean send2Server(String token, String opponentName) {
+        int responseCode = -1;
         boolean result = false;
         MediaType JSON = MediaType.parse("application/json; charset=utf-8");
         // create your json here
@@ -47,9 +48,11 @@ public class SendingMytokenAndOpponentName {
 
             OkHttpClient client = new OkHttpClient();
             Response response = client.newCall(request).execute();
-
+            responseCode = response.code();
+            if(responseCode != 200){
+                return false;
+            }
             try {
-
                 String jsonStr = response.body().string(); // 전송 요청 결과 반환 상대 허락X, 서버로 제대로 전송됐는지만
                 Log.d("Send Result: ", jsonStr);
 
@@ -77,6 +80,6 @@ public class SendingMytokenAndOpponentName {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return result; // 통신 성공이라면 true, 실패하면 false
+        return result;
     }
 }

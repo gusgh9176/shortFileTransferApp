@@ -19,7 +19,8 @@ import okhttp3.Response;
 // httpURLConnection
 public class FileDownloadUtils {
     // token 전달하여 파일 경로 얻음
-    public static void send2Server(String senderName, String token, String dir) {
+    public static int send2Server(String senderName, String token, String dir) {
+        int responseCode = -1;
         MediaType JSON = MediaType.parse("application/json; charset=utf-8");
         // create your json here
         JSONObject jsonObject = new JSONObject();
@@ -41,6 +42,10 @@ public class FileDownloadUtils {
 
             OkHttpClient client = new OkHttpClient();
             Response response = client.newCall(request).execute();
+            responseCode = response.code();
+            if(responseCode != 200){
+                return responseCode;
+            }
             String[] temp = response.headers().get("Content-Disposition").split("\\.");
             String extension = temp[temp.length-1].substring(0, temp[temp.length-1].length()-2); // 확장자 jpg, docx
 
@@ -61,5 +66,7 @@ public class FileDownloadUtils {
         }catch (Exception e){
             e.printStackTrace();
         }
+
+        return responseCode;
     }
 }

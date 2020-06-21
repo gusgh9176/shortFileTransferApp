@@ -45,7 +45,6 @@ public class GetUserListUtils {
 
             OkHttpClient client = new OkHttpClient();
             Response response = client.newCall(request).execute();
-
             try {
                 String jsonStr = response.body().string();
                 System.out.println("유저목록 JSON 확인" + jsonStr);
