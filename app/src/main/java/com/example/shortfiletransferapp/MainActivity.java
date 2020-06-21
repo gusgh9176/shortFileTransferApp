@@ -267,15 +267,5 @@ public class MainActivity extends AppCompatActivity {
         alertDialog.show();
     }
 
-    public void SendingAlertDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-
-        builder.setTitle("파일 전송중...").setMessage("파일을 수신자에게 전송하고 있습니다. \n 남은 용량: xx, 남은 시간: xx");
-
-        AlertDialog alertDialog = builder.create();
-
-        alertDialog.show();
-    }
-
 }
 
