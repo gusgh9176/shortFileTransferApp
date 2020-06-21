@@ -15,7 +15,6 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-// okhttp로 안됨 다른 통신으로 리스폰스 받아서 구현해야함
 // 이걸로 파일 경로(확장자포함) 구하고 다른 통신으로 파일 다운로드 해야함
 // httpURLConnection
 public class FileDownloadUtils {
