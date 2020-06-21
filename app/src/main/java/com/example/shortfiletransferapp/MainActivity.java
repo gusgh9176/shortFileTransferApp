@@ -42,6 +42,8 @@ import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
 
+    private SharedPreferences prefs;
+
     ListView listview;
     ListViewAdapter adapter;
 
@@ -56,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Log.d("Start: onCreate ", "Start: onCreate ");
 
+        prefs = getSharedPreferences("pref", MODE_PRIVATE);
         // FireBase 테스트
         FirebaseInstanceId.getInstance().getInstanceId()
                 .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
@@ -87,53 +90,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onStart(){
+    protected void onStart() {
         super.onStart();
         Log.d("Start: onStart ", "Start: onStart ");
-        try {
-            Thread.sleep(3000); // 3초 정지 FCM 전송을 완료하고 목록 갱신 요청하기 위해 사용
-        }catch (InterruptedException ie){
-            ie.printStackTrace();
-        }
 
-        // FCM 실행시 저장해둔 token 값 가져옴
-        // 서버에 요청하여 유저 목록 갱신
-        // 갱신된 유저 목록에서 선택 시 실행 코드
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                // 저장해놨던 token 값 가져오기
-                SharedPreferences pref = getSharedPreferences("pref", MODE_PRIVATE);
-                token = pref.getString("token","");
-                // 얻은 토큰으로 유저 목록 받아오기
-                final UserVO[] userVOS = GetUserListUtils.send2Server(token);
-
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if(userVOS == null){
-                            Log.d("state: userVOS", "is null");
-                            return;
-                        }
-                        addItemAdapter(userVOS); // 유저 목록 갱신
-                        // 유저 클릭시 파일 선택 창 열음
-                        // 전송 관련 내용 https://derveljunit.tistory.com/302?category=523828
-                        listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                            @Override
-                            public void onItemClick(AdapterView parent, View v, int position, long id) {
-                                opponentName = ((ListViewUserVO)adapter.getItem(position)).getnameStr(); // 상대 이름 변수에 저장 됨
-//                                Log.d("opponentName: ", opponentName);
-                                Intent intent = new Intent();
-                                intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-                                intent.setType("*/*");
-                                intent.setAction(Intent.ACTION_GET_CONTENT);
-                                startActivityForResult(intent, 1);
-                            }
-                        });
-                    }
-                });
-            }
-        }).start();
+        refreshUsers();
 
         Log.d("End: onStart ", "End: onStart ");
     }
@@ -196,10 +157,16 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         }).start();
-
         // 전송 완료 될때까지 해당 alertDialog 화면에 떠있음
         alertDialog.show();
+    }
 
+    @Override
+    protected void onResume(){
+        super.onResume();
+        if(checkFirstRun()){
+            Toast.makeText(this, "목록 갱신이 안된다면 잠시 후 새로고침 버튼을 눌러보세요.", Toast.LENGTH_SHORT).show();
+        }
     }
 
 
@@ -216,9 +183,8 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         switch (id) {
-            case R.id.action_refresh: // actionbar의 refresh 키 눌렀을 때 동작
-//                addItemAdapter();  // 메소드 통해 adapter와 listview를 재 생성 시켜줌
-
+            case R.id.action_refresh: // actionbar의 refresh 키 눌렀을 때 유저 목록 새로고침
+                refreshUsers();
                 Toast.makeText(this, "새로 고침", Toast.LENGTH_SHORT).show();
                 break;
         }
@@ -232,7 +198,7 @@ public class MainActivity extends AppCompatActivity {
         listview = (ListView) findViewById(R.id.listView_user);
         listview.setAdapter(adapter);
 
-        for(UserVO vo : userVOS){
+        for (UserVO vo : userVOS) {
             String index = "1";
             String name = vo.getName();
             String explain = "나와의 거리 차이 10m";
@@ -240,6 +206,46 @@ public class MainActivity extends AppCompatActivity {
         }
 
         adapter.notifyDataSetChanged(); // adapter 새로 고침
+    }
+
+    // FCM 실행시 저장해둔 token 값 가져옴
+    // 서버에 요청하여 유저 목록 갱신
+    // 갱신된 유저 목록에서 클릭 시 작업 실행
+    private void refreshUsers() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                // 저장해놨던 token 값 가져오기
+                SharedPreferences tempPref = getSharedPreferences("pref", MODE_PRIVATE);
+                token = tempPref.getString("token", "");
+                // 얻은 토큰으로 유저 목록 받아오기
+                final UserVO[] userVOS = GetUserListUtils.send2Server(token);
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (userVOS == null) {
+                            Log.d("state: userVOS", "is null");
+                            return;
+                        }
+                        addItemAdapter(userVOS); // 유저 목록 갱신
+                        // 유저 클릭시 파일 선택 창 열음
+                        // 전송 관련 내용 https://derveljunit.tistory.com/302?category=523828
+                        listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                            @Override
+                            public void onItemClick(AdapterView parent, View v, int position, long id) {
+                                opponentName = ((ListViewUserVO) adapter.getItem(position)).getnameStr(); // 상대 이름 변수에 저장 됨
+                                Intent intent = new Intent();
+                                intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                                intent.setType("*/*");
+                                intent.setAction(Intent.ACTION_GET_CONTENT);
+                                startActivityForResult(intent, 1);
+                            }
+                        });
+                    }
+                });
+            }
+        }).start();
     }
 
     // 기다리는 작업 완료시 띄워줄 alertDialog
@@ -267,5 +273,12 @@ public class MainActivity extends AppCompatActivity {
         alertDialog.show();
     }
 
+    // 앱 첫 실행 체크
+    // 첫 실행 시 true 반환, 아닐 시 false 반환
+    public boolean checkFirstRun() {
+        boolean isFirstRun = prefs.getBoolean("isFirstRun", true); // 해당 값 불러옴, 비워져있으면 true 넣음
+        prefs.edit().putBoolean("isFirstRun", false).apply(); // 해당 값 false 넣어줌
+        return isFirstRun;
+    }
 }
 
