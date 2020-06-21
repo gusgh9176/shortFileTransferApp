@@ -60,12 +60,10 @@ public class MyFireBaseMessagingService extends FirebaseMessagingService {
         if (messageTitle != null && messageBody != null) {
             Log.d("FCM Log", "알림 메시지: " + messageBody);
 
-//            Intent intent = new Intent(this, MainActivity.class);
-//            Intent intent = new Intent(this, DownloadActivity.class);
-            Intent intent = new Intent(this, DownloadActivity.class);
-
+            Intent intent = new Intent(this, MainActivity.class); // 초기화
             if(click_action.equals("DownloadActivity")){
                 intent = new Intent(this, DownloadActivity.class);
+                intent.putExtra("senderName", senderName); // 해당 Activity로 senderName 전달
                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             }
 
