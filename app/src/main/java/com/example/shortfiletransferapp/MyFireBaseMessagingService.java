@@ -66,6 +66,9 @@ public class MyFireBaseMessagingService extends FirebaseMessagingService {
                 intent.putExtra("senderName", senderName); // 해당 Activity로 senderName 전달
                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             }
+            else {
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            }
 
             PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT);
 
