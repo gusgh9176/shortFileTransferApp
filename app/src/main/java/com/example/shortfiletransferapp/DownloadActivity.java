@@ -76,7 +76,7 @@ public class DownloadActivity extends AppCompatActivity {
         builder.setNegativeButton("거절", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int id) {
-                Toast.makeText(getApplicationContext(), "거절하였습니다. 메인페이지로 돌아갑니다.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "거절하였습니다. 잠시 후 메인페이지로 돌아갑니다.", Toast.LENGTH_SHORT).show();
                 moveMainActivity();
             }
         });
@@ -86,7 +86,7 @@ public class DownloadActivity extends AppCompatActivity {
 
     private void moveMainActivity(){
         Intent intent = new Intent(this, MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(intent);
     }
 }
