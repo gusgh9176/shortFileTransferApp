@@ -94,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
         Log.d("Start: onStart ", "Start: onStart ");
 
+        // 유저 목록 불러오기
         refreshUsers();
 
         Log.d("End: onStart ", "End: onStart ");
@@ -141,7 +142,7 @@ public class MainActivity extends AppCompatActivity {
                         out.write(buffer, 0, bytesRead);
                     }
                     // 업로드 테스트
-                    FileUploadUtils.send2Server(tempSelectFile);
+                    FileUploadUtils.send2Server(tempSelectFile, token);
                     in.close();
                     out.close();
                 } catch (IOException ioe) {

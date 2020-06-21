@@ -14,13 +14,17 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class FileUploadUtils {
-    public static void send2Server(File file) {
+    public static void send2Server(File file, String token) {
+        int tokenLength = token.length();
+        String somePartToken = token.substring(tokenLength-10, tokenLength); // token 의 뒤에서 10번째 자리 전달해줌
+
         RequestBody requestBody = new MultipartBody.Builder().setType(MultipartBody.FORM)
                 .addFormDataPart("files", file.getName(), RequestBody.create(MultipartBody.FORM, file))
                 .build();
         Request request = new Request.Builder()
 //                .url("https://junior-programmer.com/upload") // Server URL 은 본인 IP를 입력
                 .url("http://172.30.1.60:8080/upload")
+                .header("User-Agent", somePartToken)
                 .post(requestBody).build();
 
         OkHttpClient client = new OkHttpClient();
