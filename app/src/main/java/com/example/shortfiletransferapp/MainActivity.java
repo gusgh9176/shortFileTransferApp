@@ -20,9 +20,12 @@ import android.widget.Toast;
 
 import com.example.shortfiletransferapp.adapter.ListViewAdapter;
 import com.example.shortfiletransferapp.permission.TedPermission;
+import com.example.shortfiletransferapp.utils.ChangeNameUtils;
+import com.example.shortfiletransferapp.utils.DateManager;
 import com.example.shortfiletransferapp.utils.network.FileUploadUtils;
 import com.example.shortfiletransferapp.utils.GetFileNameUtils;
 import com.example.shortfiletransferapp.utils.network.GetUserListUtils;
+import com.example.shortfiletransferapp.utils.network.SendingModifyName;
 import com.example.shortfiletransferapp.utils.network.SendingMytokenAndOpponentName;
 import com.example.shortfiletransferapp.vo.ListViewUserVO;
 import com.example.shortfiletransferapp.vo.UserVO;
@@ -165,9 +168,31 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume(){
         super.onResume();
-        if(checkFirstRun()){
+        if(checkFirstRun()){ // 첫 실행
             Toast.makeText(this, "목록 갱신이 안된다면 잠시 후 새로고침 버튼을 눌러보세요.", Toast.LENGTH_SHORT).show();
         }
+        else { // 첫 실행 아닐 시
+            // 마지막 이름 바뀐 시간 비교해서 새로 이름 바꾸기 요청 보냄
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    String dateStr = prefs.getString("modifyTime", ""); // 이름 저장(변경)된 시간 가지고 옴
+                    String token = prefs.getString("token", "");
+                    String name = prefs.getString("name","");
+                    String modifyDateStr = DateManager.getDateStr(); // 현재 시간
+
+                    long min = DateManager.compareDate(dateStr, modifyDateStr); // 시간 비교
+                    if (min >= 60) { // 이름이 변경된지 60분 이상일 때 이름 교체 요청
+                        String newName = ChangeNameUtils.hashName(name);
+                        int responseCode = SendingModifyName.send2Server(token, newName);
+                        if(responseCode == 200){
+                            prefs.edit().putString("name", newName).apply(); // 새로운 name 넣어줌
+                        }
+                    }
+                }
+            }).start();
+        }
+
     }
 
 
@@ -213,6 +238,9 @@ public class MainActivity extends AppCompatActivity {
     // 서버에 요청하여 유저 목록 갱신
     // 갱신된 유저 목록에서 클릭 시 작업 실행
     private void refreshUsers() {
+        final String name = prefs.getString("name", ""); // 저장해놨던 name 값 가져오기
+        Toast.makeText(this, "당신의 이름: " + name, Toast.LENGTH_LONG).show(); // name 출력
+
         new Thread(new Runnable() {
             @Override
             public void run() {
