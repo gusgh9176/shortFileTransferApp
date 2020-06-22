@@ -198,12 +198,12 @@ public class MainActivity extends AppCompatActivity {
         // 리스트뷰 참조 및 Adapter달기
         listview = (ListView) findViewById(R.id.listView_user);
         listview.setAdapter(adapter);
-
+        int index = 1;
         for (UserVO vo : userVOS) {
-            String index = "1";
             String name = vo.getName();
-            String explain = "나와의 거리 차이 10m";
-            adapter.addItem(index, name, explain);
+            String explain = "유저 이름";
+            adapter.addItem(Integer.toString(index), name, explain);
+            index++;
         }
 
         adapter.notifyDataSetChanged(); // adapter 새로 고침
