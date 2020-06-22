@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.util.Log;
 
+import com.example.shortfiletransferapp.utils.DateManager;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
@@ -21,6 +22,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Random;
 
 import okhttp3.MediaType;
@@ -104,10 +107,12 @@ public class MyFireBaseMessagingService extends FirebaseMessagingService {
         Random random = new Random();
         String name = Integer.toString(random.nextInt(10000000)); // 이름
 
-        //만들어진 token 저장
+        //만들어진 token, name, 시간 저장
         SharedPreferences pref = getSharedPreferences("pref", MODE_PRIVATE);
         SharedPreferences.Editor editor = pref.edit();
         editor.putString("token", token);
+        editor.putString("name", name);
+        editor.putString("modifyTime", DateManager.getDateStr());
         editor.apply();
         // 저장 끝
 
